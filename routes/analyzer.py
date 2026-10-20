@@ -15,7 +15,7 @@ a generic chatbot:
 from flask import Blueprint, render_template, request, session, flash, redirect, url_for
 
 from database.database import db
-from database.models import BusinessProfile
+from database.models import BusinessProfile, Prediction
 from routes.auth import login_required
 from ml.feasibility import compute_feasibility, compute_health_score
 from ml.predict import predict_risk, explain_prediction, ModelNotTrainedError
@@ -136,6 +136,20 @@ def business_analyzer():
                 growth_score=health["growth_score"],
             )
             db.session.add(profile)
+
+            # Also store a Prediction record so Risk Prediction and Dashboard metrics update immediately
+            pred_record = Prediction(
+                user_id=session["user_id"],
+                business_type=form_data["business_type"],
+                investment=startup_cost,
+                market_demand=market_demand,
+                competition=competition,
+                experience=experience,
+                operating_cost=operating_cost,
+                target_market_size=target_market,
+                predicted_risk=predicted_risk,
+            )
+            db.session.add(pred_record)
             db.session.commit()
             result["saved_id"] = profile.id
 

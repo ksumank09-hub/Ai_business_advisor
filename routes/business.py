@@ -67,6 +67,29 @@ def business_plan():
         if not generated_plan:  # demo mode OR live call failed
             generated_plan = demo_business_plan_template(form_data)
 
+        if generated_plan:
+            try:
+                b_val = float(budget) if budget else None
+            except ValueError:
+                b_val = None
+            try:
+                plan = BusinessPlan(
+                    user_id=session["user_id"],
+                    business_name=business_name or "Untitled Business",
+                    business_type=business_type or "General",
+                    budget=b_val,
+                    target_market=target_customers,
+                    content=generated_plan,
+                )
+                db.session.add(plan)
+                db.session.commit()
+                flash("Business plan generated and saved successfully to your dashboard!", "success")
+            except Exception as e:
+                db.session.rollback()
+                print(f"Error auto-saving business plan: {e}")
+
+        return render_template("business_plan.html", form_data=form_data, generated_plan=generated_plan, saved=True)
+
     return render_template("business_plan.html", form_data=form_data, generated_plan=generated_plan)
 
 

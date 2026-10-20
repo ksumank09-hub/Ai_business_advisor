@@ -9,7 +9,7 @@ from flask import Blueprint, render_template, session, redirect, url_for
 from sqlalchemy import func
 
 from database.database import db
-from database.models import User, Conversation, Message, BusinessPlan, Prediction
+from database.models import User, Conversation, Message, BusinessPlan, Prediction, BusinessProfile
 from routes.auth import login_required
 from ml.segmentation import get_segment_summary
 
@@ -33,11 +33,16 @@ def dashboard_home():
         Conversation.user_id == user_id
     ).count()
     total_plans = BusinessPlan.query.filter_by(user_id=user_id).count()
-    total_predictions = Prediction.query.filter_by(user_id=user_id).count()
+    total_businesses = BusinessProfile.query.filter_by(user_id=user_id).count()
+    raw_predictions = Prediction.query.filter_by(user_id=user_id).count()
+    total_predictions = raw_predictions + total_businesses
 
-    low_risk = Prediction.query.filter_by(user_id=user_id, predicted_risk="Low Risk").count()
-    medium_risk = Prediction.query.filter_by(user_id=user_id, predicted_risk="Medium Risk").count()
-    high_risk = Prediction.query.filter_by(user_id=user_id, predicted_risk="High Risk").count()
+    low_risk = Prediction.query.filter_by(user_id=user_id, predicted_risk="Low Risk").count() + \
+               BusinessProfile.query.filter_by(user_id=user_id, predicted_risk="Low Risk").count()
+    medium_risk = Prediction.query.filter_by(user_id=user_id, predicted_risk="Medium Risk").count() + \
+                  BusinessProfile.query.filter_by(user_id=user_id, predicted_risk="Medium Risk").count()
+    high_risk = Prediction.query.filter_by(user_id=user_id, predicted_risk="High Risk").count() + \
+                BusinessProfile.query.filter_by(user_id=user_id, predicted_risk="High Risk").count()
 
     recent_conversations = (
         Conversation.query.filter_by(user_id=user_id)
@@ -46,16 +51,29 @@ def dashboard_home():
         .all()
     )
 
+    recent_businesses = (
+        BusinessProfile.query.filter_by(user_id=user_id)
+        .order_by(BusinessProfile.created_at.desc())
+        .limit(5)
+        .all()
+    )
+
     stats = {
         "total_queries": total_queries,
         "total_plans": total_plans,
+        "total_businesses": total_businesses,
         "total_predictions": total_predictions,
         "low_risk": low_risk,
         "medium_risk": medium_risk,
         "high_risk": high_risk,
     }
 
-    return render_template("dashboard.html", stats=stats, recent_conversations=recent_conversations)
+    return render_template(
+        "dashboard.html",
+        stats=stats,
+        recent_conversations=recent_conversations,
+        recent_businesses=recent_businesses
+    )
 
 
 @dashboard_bp.route("/analytics")

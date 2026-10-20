@@ -105,6 +105,7 @@ def login():
             flash("Invalid email or password.", "danger")
             return render_template("login.html")
 
+        session.permanent = True
         session["user_id"] = user.id
         session["user_name"] = user.name
         session["role"] = user.role

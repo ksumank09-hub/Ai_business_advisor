@@ -13,6 +13,13 @@
   </div>
   <div class="col-md-3 col-6">
     <div class="stat-card">
+      <i class="bi bi-clipboard-data text-info"></i>
+      <div class="stat-value">{{ stats.total_businesses }}</div>
+      <div class="stat-label">Analyzed Businesses</div>
+    </div>
+  </div>
+  <div class="col-md-3 col-6">
+    <div class="stat-card">
       <i class="bi bi-file-earmark-text text-success"></i>
       <div class="stat-value">{{ stats.total_plans }}</div>
       <div class="stat-label">Business Plans</div>
@@ -21,22 +28,15 @@
   <div class="col-md-3 col-6">
     <div class="stat-card">
       <i class="bi bi-shield-exclamation text-warning"></i>
-      <div class="stat-value">{{ stats.total_predictions }}</div>
-      <div class="stat-label">Risk Predictions</div>
-    </div>
-  </div>
-  <div class="col-md-3 col-6">
-    <div class="stat-card">
-      <i class="bi bi-graph-up text-info"></i>
       <div class="stat-value">{{ stats.low_risk }}/{{ stats.medium_risk }}/{{ stats.high_risk }}</div>
-      <div class="stat-label">Low/Med/High Risk</div>
+      <div class="stat-label">Risk (Low/Med/High)</div>
     </div>
   </div>
 </div>
 
 <div class="row g-4">
   <div class="col-md-7">
-    <div class="card panel-card">
+    <div class="card panel-card mb-4">
       <div class="card-body">
         <h5 class="card-title">Quick Actions</h5>
         <div class="d-flex flex-wrap gap-2 mt-3">
@@ -48,6 +48,30 @@
         </div>
       </div>
     </div>
+
+    {% if recent_businesses %}
+    <div class="card panel-card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h5 class="card-title mb-0">My Analyzed Businesses</h5>
+          <a href="{{ url_for('analyzer.my_businesses') }}" class="small text-decoration-none">View All</a>
+        </div>
+        <div class="list-group list-group-flush mt-2">
+          {% for b in recent_businesses %}
+          <a href="{{ url_for('analyzer.view_profile', profile_id=b.id) }}" class="list-group-item list-group-item-action px-0 d-flex justify-content-between align-items-center">
+            <div>
+              <div class="fw-bold">{{ b.business_name }} <span class="badge bg-secondary ms-1">{{ b.business_type }}</span></div>
+              <small class="text-muted">Health: {{ b.overall_health_score }}/100 • Margin: {{ b.profit_margin_pct }}%</small>
+            </div>
+            <span class="badge {{ 'bg-success' if b.predicted_risk == 'Low Risk' else ('bg-warning text-dark' if b.predicted_risk == 'Medium Risk' else 'bg-danger') }}">
+              {{ b.predicted_risk }}
+            </span>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
   </div>
 
   <div class="col-md-5">

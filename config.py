@@ -7,6 +7,7 @@ never hard-coded here.
 """
 
 import os
+from datetime import timedelta
 from dotenv import load_dotenv
 
 # Load variables from a .env file (if present) into the environment
@@ -31,6 +32,7 @@ class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY", "dev-fallback-secret-key-change-me")
     DEBUG = os.environ.get("FLASK_DEBUG", "False" if IS_VERCEL else "True") == "True"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    PERMANENT_SESSION_LIFETIME = timedelta(days=30)
 
     # --- Database (evaluates dynamically from environment) ---
     @classproperty
