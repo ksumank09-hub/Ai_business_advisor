@@ -73,7 +73,19 @@ def create_app():
                 safe_engine = f"***@{parts[1]}"
 
             users = User.query.all()
-            user_list = [{"id": u.id, "email": u.email, "name": u.name} for u in users]
+            user_list = []
+            for u in users:
+                c_count = Conversation.query.filter_by(user_id=u.id).count()
+                p_count = Prediction.query.filter_by(user_id=u.id).count()
+                bp_count = BusinessPlan.query.filter_by(user_id=u.id).count()
+                user_list.append({
+                    "id": u.id,
+                    "email": u.email,
+                    "name": u.name,
+                    "conversations": c_count,
+                    "predictions": p_count,
+                    "plans": bp_count
+                })
             conv_count = Conversation.query.count()
             msg_count = Message.query.count()
             plan_count = BusinessPlan.query.count()
