@@ -35,7 +35,19 @@ class Config:
     # --- Database (evaluates dynamically from environment) ---
     @classproperty
     def SQLALCHEMY_DATABASE_URI(cls):
-        env_db = os.environ.get("DATABASE_URL") or os.environ.get("POSTGRES_URL")
+        env_db = (
+            os.environ.get("DATABASE_URL")
+            or os.environ.get("POSTGRES_URL")
+            or os.environ.get("POSTGRES_PRISMA_URL")
+        )
+        # Fallback to Neon/Postgres individual connection variables if present
+        if not env_db and os.environ.get("POSTGRES_HOST") and os.environ.get("PGPASSWORD"):
+            user = os.environ.get("PGUSER", "default")
+            pw = os.environ.get("PGPASSWORD", "")
+            host = os.environ.get("POSTGRES_HOST", "")
+            db_name = os.environ.get("PGDATABASE") or os.environ.get("POSTGRES_DATABASE", "neondb")
+            env_db = f"postgresql://{user}:{pw}@{host}/{db_name}?sslmode=require"
+
         if env_db:
             if env_db.startswith("postgres://"):
                 env_db = env_db.replace("postgres://", "postgresql://", 1)
