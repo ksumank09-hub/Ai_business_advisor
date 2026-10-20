@@ -22,12 +22,13 @@ class Config:
     DEBUG = os.environ.get("FLASK_DEBUG", "False" if IS_VERCEL else "True") == "True"
 
     # --- Database ---
-    if IS_VERCEL and not os.environ.get("DATABASE_URL"):
+    _env_db = os.environ.get("DATABASE_URL") or os.environ.get("POSTGRES_URL")
+    if IS_VERCEL and not _env_db:
         _default_db = "sqlite:////tmp/app.db"
     else:
         _default_db = f"sqlite:///{os.path.join(BASE_DIR, 'instance', 'app.db')}"
 
-    _db_url = os.environ.get("DATABASE_URL", _default_db)
+    _db_url = _env_db or _default_db
     # Fix old 'postgres://' scheme for SQLAlchemy 1.4+
     if _db_url.startswith("postgres://"):
         _db_url = _db_url.replace("postgres://", "postgresql://", 1)
