@@ -58,6 +58,33 @@ def create_app():
     def inject_globals():
         return {"demo_mode": Config.DEMO_MODE}
 
+    # --- health / diagnostic endpoint ---
+    @app.route("/api/health")
+    def health():
+        import os
+        engine_str = str(db.engine.url)
+        safe_engine = engine_str
+        if "@" in safe_engine:
+            parts = safe_engine.split("@")
+            prefix = parts[0].split(":")[0] + ":***"
+            safe_engine = f"{prefix}@{parts[1]}"
+        env_keys = [k for k in os.environ.keys() if any(w in k for w in ["POSTGRES", "DATABASE", "PG", "LLM"])]
+        user_count = -1
+        db_err = None
+        try:
+            from database.models import User
+            user_count = User.query.count()
+        except Exception as e:
+            db_err = str(e)
+        return {
+            "is_vercel": bool(os.environ.get("VERCEL")),
+            "database_engine": safe_engine,
+            "is_sqlite": "sqlite" in safe_engine,
+            "matching_env_keys": env_keys,
+            "user_count": user_count,
+            "db_error": db_err
+        }
+
     # --- error handlers (app must never crash the user's browser view) ---
     @app.errorhandler(404)
     def not_found(e):
