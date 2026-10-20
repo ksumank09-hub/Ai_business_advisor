@@ -61,7 +61,8 @@ def create_app():
     # --- error handlers (app must never crash the user's browser view) ---
     @app.errorhandler(404)
     def not_found(e):
-        return render_template("error.html", code=404, message="Page not found."), 404
+        from flask import request
+        return f"404 Not Found. request.path={request.path}, request.url={request.url}, environ['PATH_INFO']={request.environ.get('PATH_INFO')}", 404
 
     @app.errorhandler(500)
     def server_error(e):
