@@ -62,28 +62,43 @@ def create_app():
     @app.route("/api/health")
     def health():
         import os
-        engine_str = str(db.engine.url)
-        safe_engine = engine_str
-        if "@" in safe_engine:
-            parts = safe_engine.split("@")
-            prefix = parts[0].split(":")[0] + ":***"
-            safe_engine = f"{prefix}@{parts[1]}"
-        env_keys = [k for k in os.environ.keys() if any(w in k for w in ["POSTGRES", "DATABASE", "PG", "LLM"])]
-        user_count = -1
-        db_err = None
+        import traceback
         try:
-            from database.models import User
-            user_count = User.query.count()
-        except Exception as e:
-            db_err = str(e)
-        return {
-            "is_vercel": bool(os.environ.get("VERCEL")),
-            "database_engine": safe_engine,
-            "is_sqlite": "sqlite" in safe_engine,
-            "matching_env_keys": env_keys,
-            "user_count": user_count,
-            "db_error": db_err
-        }
+            engine_str = "unknown"
+            try:
+                engine_str = str(db.engine.url)
+            except Exception as e:
+                engine_str = f"error reading engine: {e}"
+
+            safe_engine = engine_str
+            if "@" in safe_engine:
+                parts = safe_engine.split("@")
+                safe_engine = f"***@{parts[1]}"
+
+            env_keys = [k for k in os.environ.keys() if any(w in k for w in ["POSTGRES", "DATABASE", "PG", "LLM"])]
+            user_count = -1
+            db_err = None
+            try:
+                from database.models import User
+                user_count = User.query.count()
+            except Exception as e:
+                db_err = str(e)
+
+            return {
+                "status": "ok",
+                "is_vercel": bool(os.environ.get("VERCEL")),
+                "database_engine": safe_engine,
+                "is_sqlite": "sqlite" in safe_engine,
+                "matching_env_keys": env_keys,
+                "user_count": user_count,
+                "db_error": db_err
+            }
+        except Exception as exc:
+            return {
+                "status": "error",
+                "error": str(exc),
+                "trace": traceback.format_exc()
+            }, 200
 
     # --- error handlers (app must never crash the user's browser view) ---
     @app.errorhandler(404)
@@ -92,7 +107,9 @@ def create_app():
 
     @app.errorhandler(500)
     def server_error(e):
-        return render_template("error.html", code=500, message="Something went wrong on our end."), 500
+        import traceback
+        err_msg = traceback.format_exc()
+        return render_template("error.html", code=500, message=f"Internal Server Error: {err_msg[-400:]}"), 500
 
     return app
 
