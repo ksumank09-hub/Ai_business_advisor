@@ -56,27 +56,37 @@ class Config:
             return "sqlite:////tmp/app.db"
         return f"sqlite:///{os.path.join(BASE_DIR, 'instance', 'app.db')}"
 
-    # --- LLM / Demo Mode (evaluates dynamically so env changes take effect immediately) ---
+    # --- LLM / Demo Mode (evaluates dynamically with robust auto-detection) ---
     @classproperty
     def LLM_PROVIDER(cls):
-        return os.environ.get("LLM_PROVIDER", "none").lower()
+        return os.environ.get("LLM_PROVIDER", "openai").strip().lower()
 
     @classproperty
     def LLM_API_KEY(cls):
-        return os.environ.get("LLM_API_KEY", "")
+        return os.environ.get("LLM_API_KEY", "").strip().strip('"').strip("'")
 
     @classproperty
     def LLM_API_BASE(cls):
-        return os.environ.get("LLM_API_BASE", "https://api.openai.com/v1")
+        base = os.environ.get("LLM_API_BASE", "").strip().strip('"').strip("'")
+        if not base:
+            key = cls.LLM_API_KEY
+            if key.startswith("gsk_"):
+                return "https://api.groq.com/openai/v1"
+            return "https://api.openai.com/v1"
+        return base.rstrip("/")
 
     @classproperty
     def LLM_MODEL(cls):
-        return os.environ.get("LLM_MODEL", "gpt-4o-mini")
+        m = os.environ.get("LLM_MODEL", "").strip().strip('"').strip("'")
+        # Sanitize if user accidentally pasted an API key or left it invalid
+        if not m or m.startswith("gsk_") or len(m) > 30:
+            return "openai/gpt-oss-120b"
+        return m
 
     @classproperty
     def DEMO_MODE(cls):
-        provider = os.environ.get("LLM_PROVIDER", "none").lower()
-        key = os.environ.get("LLM_API_KEY", "").strip()
+        provider = cls.LLM_PROVIDER
+        key = cls.LLM_API_KEY
         return (provider == "none") or (key == "")
 
     # --- Paths used across the app ---

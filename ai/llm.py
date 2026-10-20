@@ -23,16 +23,25 @@ class LLMError(Exception):
 def _call_openai_compatible_api(prompt: str) -> str:
     """
     Calls an OpenAI-compatible /chat/completions endpoint.
-    Works with OpenAI itself, and with many providers (incl. some
-    Mistral/LLaMA hosting services) that mirror the same request schema.
+    Works with OpenAI itself, and with many providers (incl. Groq,
+    Mistral, LLaMA) that mirror the same request schema.
     """
-    url = f"{Config.LLM_API_BASE.rstrip('/')}/chat/completions"
+    api_key = str(Config.LLM_API_KEY).strip().strip('"').strip("'")
+    api_base = str(Config.LLM_API_BASE).strip().strip('"').strip("'")
+    model = str(Config.LLM_MODEL).strip().strip('"').strip("'")
+
+    if not api_base:
+        api_base = "https://api.groq.com/openai/v1" if api_key.startswith("gsk_") else "https://api.openai.com/v1"
+    if not model or model.startswith("gsk_") or len(model) > 30:
+        model = "openai/gpt-oss-120b"
+
+    url = f"{api_base.rstrip('/')}/chat/completions"
     headers = {
-        "Authorization": f"Bearer {Config.LLM_API_KEY}",
+        "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
     payload = {
-        "model": Config.LLM_MODEL,
+        "model": model,
         "messages": [
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": prompt},
@@ -42,11 +51,20 @@ def _call_openai_compatible_api(prompt: str) -> str:
     }
 
     try:
-        response = requests.post(url, headers=headers, json=payload, timeout=20)
+        response = requests.post(url, headers=headers, json=payload, timeout=25)
         response.raise_for_status()
         data = response.json()
         return data["choices"][0]["message"]["content"].strip()
     except Exception as exc:
+        # If the configured model failed on Groq, fallback to known working openai/gpt-oss-120b
+        if "groq.com" in api_base and model != "openai/gpt-oss-120b":
+            try:
+                payload["model"] = "openai/gpt-oss-120b"
+                resp = requests.post(url, headers=headers, json=payload, timeout=25)
+                resp.raise_for_status()
+                return resp.json()["choices"][0]["message"]["content"].strip()
+            except Exception:
+                pass
         raise LLMError(f"LLM API call failed: {exc}")
 
 
