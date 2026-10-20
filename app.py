@@ -62,7 +62,8 @@ def create_app():
     @app.errorhandler(404)
     def not_found(e):
         from flask import request
-        return f"404 Not Found. request.path={request.path}, request.url={request.url}, environ['PATH_INFO']={request.environ.get('PATH_INFO')}", 404
+        headers_str = ", ".join(f"{k}: {v}" for k, v in request.headers.items() if "cookie" not in k.lower())
+        return f"path={request.path} | headers: {headers_str}", 404
 
     @app.errorhandler(500)
     def server_error(e):
