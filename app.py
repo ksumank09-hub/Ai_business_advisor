@@ -61,9 +61,7 @@ def create_app():
     # --- error handlers (app must never crash the user's browser view) ---
     @app.errorhandler(404)
     def not_found(e):
-        from flask import request
-        headers_str = ", ".join(f"{k}: {v}" for k, v in request.headers.items() if "cookie" not in k.lower())
-        return f"path={request.path} | headers: {headers_str}", 404
+        return render_template("error.html", code=404, message="Page not found."), 404
 
     @app.errorhandler(500)
     def server_error(e):
