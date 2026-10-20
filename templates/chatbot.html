@@ -88,10 +88,6 @@
           {% if msg.sources %}
           <div class="bubble-sources mt-2 small text-muted"><i class="bi bi-journal-text"></i> Sources: {{ msg.sources }}</div>
           {% endif %}
-          
-          {% if loop.last and msg.sender == 'ai' %}
-          <input type="hidden" id="autoPlayText" value="{{ msg.message | striptags | escape }}">
-          {% endif %}
         </div>
       {% endfor %}
     </div>
@@ -172,67 +168,81 @@
     voiceBtn.style.display = 'none'; // Hide if browser doesn't support it
   }
 
-  // --- Voice Reply (Text to Speech) ---
+  // --- Voice Reply (Text to Speech) with Toggle Play / Stop ---
   let preferredVoice = null;
-  
+  let currentlyPlayingBtn = null;
+
   function loadVoices() {
+    if (!('speechSynthesis' in window)) return;
     const voices = window.speechSynthesis.getVoices();
     if (voices.length > 0) {
-      // Try to find a high-quality "Premium", "Natural", or "Online" voice (e.g. Google, Microsoft)
       preferredVoice = voices.find(v => (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Online') || v.name.includes('Premium')) && v.lang.startsWith('en')) 
                        || voices.find(v => v.lang === 'en-US' || v.lang === 'en-GB') 
                        || voices[0];
     }
   }
-  
-  // Voices are loaded asynchronously in many browsers
-  window.speechSynthesis.onvoiceschanged = loadVoices;
-  loadVoices(); // Try loading immediately just in case
+
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+    loadVoices();
+  }
+
+  function resetAllAudioIcons() {
+    document.querySelectorAll('.read-aloud-btn').forEach(b => {
+      const icon = b.querySelector('i');
+      if (icon) {
+        icon.className = 'bi bi-volume-up fs-5';
+      }
+      b.classList.remove('text-primary', 'text-danger');
+      b.title = 'Read aloud';
+    });
+    currentlyPlayingBtn = null;
+  }
 
   const readAloudBtns = document.querySelectorAll('.read-aloud-btn');
   readAloudBtns.forEach(btn => {
-    btn.addEventListener('click', function() {
-      window.speechSynthesis.cancel(); // Stop any current speech
-      
-      const textToRead = this.getAttribute('data-text');
-      if (textToRead) {
-        const utterance = new SpeechSynthesisUtterance(textToRead);
-        
-        if (preferredVoice) {
-          utterance.voice = preferredVoice;
-        }
-        
-        // Slightly tweak pitch and rate for a more natural human sound
-        utterance.rate = 1.0; 
-        utterance.pitch = 1.05;
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      if (!('speechSynthesis' in window)) return;
 
-        const icon = this.querySelector('i');
-        
-        icon.classList.remove('bi-volume-up');
-        icon.classList.add('bi-volume-up-fill', 'text-primary');
-        
-        utterance.onend = function() {
-          icon.classList.add('bi-volume-up');
-          icon.classList.remove('bi-volume-up-fill', 'text-primary');
-        };
-        
-        window.speechSynthesis.speak(utterance);
+      // If clicking the button that is already playing, STOP it
+      if (currentlyPlayingBtn === this && window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+        resetAllAudioIcons();
+        return;
       }
-    });
-  });
 
-  // Auto-play the newest AI message on load
-  window.addEventListener('load', function() {
-    const autoPlayInput = document.getElementById('autoPlayText');
-    if (autoPlayInput && autoPlayInput.value) {
-      setTimeout(() => {
-        // Find the last read-aloud button to highlight it and trigger speech
-        const btns = document.querySelectorAll('.read-aloud-btn');
-        if (btns.length > 0) {
-          btns[btns.length - 1].click(); 
-        }
-      }, 500); // slight delay to ensure UI and voices are ready
-    }
+      // Stop any other currently playing speech
+      window.speechSynthesis.cancel();
+      resetAllAudioIcons();
+
+      const textToRead = this.getAttribute('data-text');
+      if (!textToRead) return;
+
+      const utterance = new SpeechSynthesisUtterance(textToRead);
+      if (preferredVoice) {
+        utterance.voice = preferredVoice;
+      }
+      utterance.rate = 1.0;
+      utterance.pitch = 1.05;
+
+      const icon = this.querySelector('i');
+      if (icon) {
+        icon.className = 'bi bi-stop-circle-fill text-danger fs-5';
+      }
+      this.title = 'Stop reading';
+      currentlyPlayingBtn = this;
+
+      utterance.onend = function() {
+        resetAllAudioIcons();
+      };
+
+      utterance.onerror = function() {
+        resetAllAudioIcons();
+      };
+
+      window.speechSynthesis.speak(utterance);
+    });
   });
 </script>
 {% endblock %}

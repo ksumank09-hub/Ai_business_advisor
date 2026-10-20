@@ -2,7 +2,7 @@
 config.py
 ---------
 Central configuration for the AI Business Assistant.
-All secrets are read from environment variables (via python-dotenv),
+All secrets are read dynamically from environment variables (via python-dotenv),
 never hard-coded here.
 """
 
@@ -16,35 +16,56 @@ BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 IS_VERCEL = bool(os.environ.get("VERCEL"))
 
 
+class classproperty:
+    """Descriptor that acts like @property but for class-level access."""
+    def __init__(self, func):
+        self.func = func
+
+    def __get__(self, obj, owner=None):
+        target = owner if owner is not None else type(obj)
+        return self.func(target)
+
+
 class Config:
     # --- Flask ---
     SECRET_KEY = os.environ.get("SECRET_KEY", "dev-fallback-secret-key-change-me")
     DEBUG = os.environ.get("FLASK_DEBUG", "False" if IS_VERCEL else "True") == "True"
-
-    # --- Database ---
-    _env_db = os.environ.get("DATABASE_URL") or os.environ.get("POSTGRES_URL")
-    if IS_VERCEL and not _env_db:
-        _default_db = "sqlite:////tmp/app.db"
-    else:
-        _default_db = f"sqlite:///{os.path.join(BASE_DIR, 'instance', 'app.db')}"
-
-    _db_url = _env_db or _default_db
-    # Fix old 'postgres://' scheme for SQLAlchemy 1.4+
-    if _db_url.startswith("postgres://"):
-        _db_url = _db_url.replace("postgres://", "postgresql://", 1)
-    SQLALCHEMY_DATABASE_URI = _db_url
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-    # --- LLM / Demo Mode ---
-    LLM_PROVIDER = os.environ.get("LLM_PROVIDER", "none").lower()
-    LLM_API_KEY = os.environ.get("LLM_API_KEY", "")
-    LLM_API_BASE = os.environ.get("LLM_API_BASE", "https://api.openai.com/v1")
-    LLM_MODEL = os.environ.get("LLM_MODEL", "gpt-4o-mini")
+    # --- Database (evaluates dynamically from environment) ---
+    @classproperty
+    def SQLALCHEMY_DATABASE_URI(cls):
+        env_db = os.environ.get("DATABASE_URL") or os.environ.get("POSTGRES_URL")
+        if env_db:
+            if env_db.startswith("postgres://"):
+                env_db = env_db.replace("postgres://", "postgresql://", 1)
+            return env_db
+        if IS_VERCEL:
+            return "sqlite:////tmp/app.db"
+        return f"sqlite:///{os.path.join(BASE_DIR, 'instance', 'app.db')}"
 
-    # The app is considered to be in DEMO MODE whenever no usable API key/provider
-    # is configured. This is checked at runtime (see ai/llm.py) so the app never
-    # crashes just because an external AI service is unavailable.
-    DEMO_MODE = (LLM_PROVIDER == "none") or (LLM_API_KEY.strip() == "")
+    # --- LLM / Demo Mode (evaluates dynamically so env changes take effect immediately) ---
+    @classproperty
+    def LLM_PROVIDER(cls):
+        return os.environ.get("LLM_PROVIDER", "none").lower()
+
+    @classproperty
+    def LLM_API_KEY(cls):
+        return os.environ.get("LLM_API_KEY", "")
+
+    @classproperty
+    def LLM_API_BASE(cls):
+        return os.environ.get("LLM_API_BASE", "https://api.openai.com/v1")
+
+    @classproperty
+    def LLM_MODEL(cls):
+        return os.environ.get("LLM_MODEL", "gpt-4o-mini")
+
+    @classproperty
+    def DEMO_MODE(cls):
+        provider = os.environ.get("LLM_PROVIDER", "none").lower()
+        key = os.environ.get("LLM_API_KEY", "").strip()
+        return (provider == "none") or (key == "")
 
     # --- Paths used across the app ---
     DATA_DIR = os.path.join(BASE_DIR, "data")
