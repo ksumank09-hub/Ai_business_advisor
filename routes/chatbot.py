@@ -11,6 +11,7 @@ The AI Business Assistant chat interface:
 """
 
 from flask import Blueprint, render_template, request, redirect, url_for, session, jsonify, flash
+import re
 
 from database.database import db
 from database.models import Conversation, Message, BusinessProfile
@@ -98,6 +99,10 @@ def send_message():
 
     if not user_query:
         flash("Please type a question before sending.", "warning")
+        return redirect(url_for("chatbot.chat_home", conv_id=conv_id))
+
+    if re.search(r'\bbudget\b[^\d]*?(?:-\d+|\b0\b)', user_query.lower()):
+        flash("Invalid budget.", "danger")
         return redirect(url_for("chatbot.chat_home", conv_id=conv_id))
 
     # get or create conversation

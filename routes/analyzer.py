@@ -60,6 +60,9 @@ def business_analyzer():
                 raise ValueError("missing fields")
 
             startup_cost = float(form_data["startup_cost"])
+            if startup_cost <= 0:
+                flash("Invalid budget.", "danger")
+                raise ValueError("invalid budget")
             expected_price = float(form_data["expected_price_per_order"])
             expected_daily_customers = float(form_data["expected_daily_customers"])
             num_employees = int(form_data.get("num_employees") or 0)
@@ -67,6 +70,9 @@ def business_analyzer():
             monthly_rent = float(form_data.get("monthly_rent") or 0)
             raw_material_cost = float(form_data.get("raw_material_cost_per_month") or 0)
             marketing_budget = float(form_data.get("marketing_budget_per_month") or 0)
+            if marketing_budget < 0:
+                flash("Invalid budget.", "danger")
+                raise ValueError("invalid budget")
             other_expenses = float(form_data.get("other_monthly_expenses") or 0)
             experience = form_data.get("business_experience") or "Medium"
             market_demand = form_data.get("market_demand") or "Medium"
@@ -195,7 +201,7 @@ def idea_generator():
             keywords = [k.strip() for k in keywords_raw.split(",") if k.strip()]
             ideas = generate_ideas(budget=budget_val, keywords=keywords, experience=experience, top_n=4)
         except ValueError:
-            flash("Please enter a valid budget amount.", "danger")
+            flash("Invalid budget.", "danger")
 
     return render_template("idea_generator.html", form_data=form_data, ideas=ideas)
 

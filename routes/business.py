@@ -42,6 +42,16 @@ def business_plan():
         if not business_name or not business_type:
             flash("Business name and business type are required.", "danger")
             return render_template("business_plan.html", form_data=form_data, generated_plan=None)
+            
+        if budget:
+            try:
+                b_val = float(budget)
+                if b_val <= 0:
+                    flash("Invalid budget.", "danger")
+                    return render_template("business_plan.html", form_data=form_data, generated_plan=None)
+            except ValueError:
+                flash("Invalid budget.", "danger")
+                return render_template("business_plan.html", form_data=form_data, generated_plan=None)
 
         # Try live LLM first (if configured), else Demo Mode template
         if not Config.DEMO_MODE:
@@ -111,6 +121,16 @@ def market_analysis():
         if not business_type or not location:
             flash("Business type and location are required.", "danger")
             return render_template("market_analysis.html", form_data=form_data, result=None)
+            
+        if budget:
+            try:
+                b_val = float(budget)
+                if b_val <= 0:
+                    flash("Invalid budget.", "danger")
+                    return render_template("market_analysis.html", form_data=form_data, result=None)
+            except ValueError:
+                flash("Invalid budget.", "danger")
+                return render_template("market_analysis.html", form_data=form_data, result=None)
 
         # Demo Mode / fallback template (kept simple + structured; labeled as AI/demo insight)
         analysis_result = demo_market_analysis_template(form_data)

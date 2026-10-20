@@ -1,0 +1,15 @@
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+tests/
+.git/
+instance/*.db
+instance/*.sqlite3
+reports/*.pdf
+reports/*.xlsx
+.vscode/
+.idea/

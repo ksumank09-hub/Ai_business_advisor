@@ -13,15 +13,21 @@ from dotenv import load_dotenv
 load_dotenv()
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+IS_VERCEL = bool(os.environ.get("VERCEL"))
 
 
 class Config:
     # --- Flask ---
     SECRET_KEY = os.environ.get("SECRET_KEY", "dev-fallback-secret-key-change-me")
-    DEBUG = os.environ.get("FLASK_DEBUG", "True") == "True"
+    DEBUG = os.environ.get("FLASK_DEBUG", "False" if IS_VERCEL else "True") == "True"
 
     # --- Database ---
-    _db_url = os.environ.get("DATABASE_URL", f"sqlite:///{os.path.join(BASE_DIR, 'instance', 'app.db')}")
+    if IS_VERCEL and not os.environ.get("DATABASE_URL"):
+        _default_db = "sqlite:////tmp/app.db"
+    else:
+        _default_db = f"sqlite:///{os.path.join(BASE_DIR, 'instance', 'app.db')}"
+
+    _db_url = os.environ.get("DATABASE_URL", _default_db)
     # Fix old 'postgres://' scheme for SQLAlchemy 1.4+
     if _db_url.startswith("postgres://"):
         _db_url = _db_url.replace("postgres://", "postgresql://", 1)
@@ -43,7 +49,7 @@ class Config:
     DATA_DIR = os.path.join(BASE_DIR, "data")
     KNOWLEDGE_BASE_DIR = os.path.join(BASE_DIR, "knowledge_base")
     ML_DIR = os.path.join(BASE_DIR, "ml")
-    REPORTS_DIR = os.path.join(BASE_DIR, "reports")
+    REPORTS_DIR = os.environ.get("REPORTS_DIR", "/tmp/reports" if IS_VERCEL else os.path.join(BASE_DIR, "reports"))
     MODEL_PATH = os.path.join(ML_DIR, "model.pkl")
     ENCODERS_PATH = os.path.join(ML_DIR, "encoders.pkl")
     SEGMENTATION_MODEL_PATH = os.path.join(ML_DIR, "segmentation_model.pkl")

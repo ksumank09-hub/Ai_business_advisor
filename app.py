@@ -30,8 +30,16 @@ def create_app():
     app.config.from_object(Config)
 
     # ensure required folders exist
-    os.makedirs(os.path.join(app.root_path, "instance"), exist_ok=True)
-    os.makedirs(Config.REPORTS_DIR, exist_ok=True)
+    try:
+        if not os.environ.get("VERCEL"):
+            os.makedirs(os.path.join(app.root_path, "instance"), exist_ok=True)
+    except OSError:
+        pass
+
+    try:
+        os.makedirs(Config.REPORTS_DIR, exist_ok=True)
+    except OSError:
+        pass
 
     # --- database ---
     init_db(app)
