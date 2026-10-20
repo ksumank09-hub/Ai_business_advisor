@@ -63,35 +63,31 @@ def create_app():
     def health():
         import os
         import traceback
+        from database.database import db
+        from database.models import User, Conversation, Message, BusinessPlan, Prediction
         try:
-            engine_str = "unknown"
-            try:
-                engine_str = str(db.engine.url)
-            except Exception as e:
-                engine_str = f"error reading engine: {e}"
-
+            engine_str = str(db.engine.url)
             safe_engine = engine_str
             if "@" in safe_engine:
                 parts = safe_engine.split("@")
                 safe_engine = f"***@{parts[1]}"
 
-            env_keys = [k for k in os.environ.keys() if any(w in k for w in ["POSTGRES", "DATABASE", "PG", "LLM"])]
-            user_count = -1
-            db_err = None
-            try:
-                from database.models import User
-                user_count = User.query.count()
-            except Exception as e:
-                db_err = str(e)
+            users = User.query.all()
+            user_list = [{"id": u.id, "email": u.email, "name": u.name} for u in users]
+            conv_count = Conversation.query.count()
+            msg_count = Message.query.count()
+            plan_count = BusinessPlan.query.count()
+            pred_count = Prediction.query.count()
 
             return {
                 "status": "ok",
-                "is_vercel": bool(os.environ.get("VERCEL")),
                 "database_engine": safe_engine,
                 "is_sqlite": "sqlite" in safe_engine,
-                "matching_env_keys": env_keys,
-                "user_count": user_count,
-                "db_error": db_err
+                "users": user_list,
+                "conversations": conv_count,
+                "messages": msg_count,
+                "plans": plan_count,
+                "predictions": pred_count
             }
         except Exception as exc:
             return {
