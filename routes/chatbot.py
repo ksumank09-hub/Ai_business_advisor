@@ -156,10 +156,39 @@ def send_message():
     ai_msg = Message(conversation_id=conversation.id, sender="ai",
                       message=ai_response_text, category=INTENT_LABELS.get(intent, intent),
                       sources=sources_str)
-    db.session.add_all([user_msg, ai_msg])
-    db.session.commit()
+    try:
+        db.session.add_all([user_msg, ai_msg])
+        db.session.commit()
+    except Exception as exc:
+        db.session.rollback()
+        print(f"Error saving chat messages: {exc}")
+        flash("Could not save message history.", "warning")
 
     return redirect(url_for("chatbot.chat_home", conv_id=conversation.id))
+
+
+@chatbot_bp.route("/chat/delete/<int:conv_id>", methods=["POST"])
+@login_required
+def delete_chat(conv_id):
+    user_id = session["user_id"]
+    conversation = Conversation.query.filter_by(id=conv_id, user_id=user_id).first()
+    if conversation:
+        db.session.delete(conversation)
+        db.session.commit()
+        flash("Conversation deleted.", "info")
+    return redirect(url_for("chatbot.chat_home"))
+
+
+@chatbot_bp.route("/chat/clear", methods=["POST"])
+@login_required
+def clear_conversations():
+    user_id = session["user_id"]
+    conversations = Conversation.query.filter_by(user_id=user_id).all()
+    for conv in conversations:
+        db.session.delete(conv)
+    db.session.commit()
+    flash("All conversation history cleared.", "success")
+    return redirect(url_for("chatbot.chat_home"))
 
 
 @chatbot_bp.route("/history")

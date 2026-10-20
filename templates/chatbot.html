@@ -6,13 +6,31 @@
     <form method="POST" action="{{ url_for('chatbot.new_conversation') }}">
       <button type="submit" class="btn btn-primary w-100 mb-3"><i class="bi bi-plus-lg"></i> New Conversation</button>
     </form>
+    <div class="d-flex justify-content-between align-items-center px-1 mb-2">
+      <span class="small text-muted text-uppercase fw-bold" style="font-size: 0.75rem; letter-spacing: 0.5px;">Your Chats</span>
+      {% if conversations %}
+      <form method="POST" action="{{ url_for('chatbot.clear_conversations') }}" onsubmit="return confirm('Clear all conversation history?');" class="m-0 p-0">
+        <button type="submit" class="btn btn-link text-danger p-0 text-decoration-none" title="Clear all chat history" style="font-size: 0.75rem;">
+          <i class="bi bi-trash"></i> Clear All
+        </button>
+      </form>
+      {% endif %}
+    </div>
     <div class="conversation-list">
       {% for conv in conversations %}
-      <a href="{{ url_for('chatbot.chat_home', conv_id=conv.id) }}"
-         class="conversation-item {{ 'active' if active_conversation and conv.id == active_conversation.id else '' }}">
-        <i class="bi bi-chat-left-text"></i>
-        <span>{{ conv.title }}</span>
-      </a>
+      <div class="conversation-item d-flex align-items-center justify-content-between {{ 'active' if active_conversation and conv.id == active_conversation.id else '' }}" style="padding: 0.4rem 0.6rem;">
+        <a href="{{ url_for('chatbot.chat_home', conv_id=conv.id) }}"
+           class="text-decoration-none text-reset text-truncate flex-grow-1 d-flex align-items-center"
+           title="{{ conv.title }}">
+          <i class="bi bi-chat-left-text me-2 flex-shrink-0"></i>
+          <span class="text-truncate">{{ conv.title }}</span>
+        </a>
+        <form method="POST" action="{{ url_for('chatbot.delete_chat', conv_id=conv.id) }}" class="m-0 ms-1 flex-shrink-0" onsubmit="event.stopPropagation();">
+          <button type="submit" class="btn btn-sm btn-link text-muted p-0 text-decoration-none" title="Delete conversation" style="opacity: 0.5; line-height: 1;">
+            <i class="bi bi-x-circle fs-6"></i>
+          </button>
+        </form>
+      </div>
       {% else %}
       <p class="text-muted small px-2">No conversations yet.</p>
       {% endfor %}
@@ -85,6 +103,11 @@
             {% endif %}
           </div>
           <div class="bubble-content">{{ msg.message | replace('\n', '<br>') | safe }}</div>
+          {% if '[DEMO MODE RESPONSE' in msg.message %}
+          <div class="alert alert-secondary py-1 px-2 small mt-2 mb-0" style="font-size: 0.8rem; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);">
+            <i class="bi bi-info-circle text-info"></i> <em>Old test message saved before live Groq AI was connected. Type a new question below to chat with real-time AI!</em>
+          </div>
+          {% endif %}
           {% if msg.sources %}
           <div class="bubble-sources mt-2 small text-muted"><i class="bi bi-journal-text"></i> Sources: {{ msg.sources }}</div>
           {% endif %}
@@ -106,6 +129,13 @@
 
 {% block scripts %}
 <script>
+  // Ensure NO audio ever plays automatically on page load or tab focus
+  if ('speechSynthesis' in window) {
+    try {
+      window.speechSynthesis.cancel();
+    } catch (e) {}
+  }
+
   // scroll to bottom of chat on load
   var chatMessages = document.getElementById('chatMessages');
   if (chatMessages) { chatMessages.scrollTop = chatMessages.scrollHeight; }
@@ -199,14 +229,24 @@
     currentlyPlayingBtn = null;
   }
 
+  // Stop any lingering audio when leaving the page
+  window.addEventListener('beforeunload', function() {
+    if ('speechSynthesis' in window) {
+      try {
+        window.speechSynthesis.cancel();
+      } catch (e) {}
+    }
+  });
+
   const readAloudBtns = document.querySelectorAll('.read-aloud-btn');
   readAloudBtns.forEach(btn => {
     btn.addEventListener('click', function(e) {
       e.preventDefault();
+      e.stopPropagation();
       if (!('speechSynthesis' in window)) return;
 
-      // If clicking the button that is already playing, STOP it
-      if (currentlyPlayingBtn === this && window.speechSynthesis.speaking) {
+      // If clicking the button that is already playing, STOP it immediately
+      if (currentlyPlayingBtn === this) {
         window.speechSynthesis.cancel();
         resetAllAudioIcons();
         return;

@@ -14,12 +14,21 @@ auth_bp = Blueprint("auth", __name__)
 
 
 def login_required(view_func):
-    """Decorator: redirect to login page if no user is in session."""
+    """Decorator: redirect to login page if no user is in session, or if user not in DB."""
     @wraps(view_func)
     def wrapped(*args, **kwargs):
-        if "user_id" not in session:
+        user_id = session.get("user_id")
+        if not user_id:
             flash("Please log in to continue.", "warning")
             return redirect(url_for("auth.login"))
+        try:
+            user = db.session.get(User, user_id)
+            if not user:
+                session.clear()
+                flash("Your session has expired. Please log in again.", "warning")
+                return redirect(url_for("auth.login"))
+        except Exception:
+            pass
         return view_func(*args, **kwargs)
     return wrapped
 

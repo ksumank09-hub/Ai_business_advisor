@@ -80,7 +80,7 @@ def generate_business_response(user_query: str, intent: str, context: str) -> di
     """
     if Config.DEMO_MODE:
         return {
-            "response": f"[Config.DEMO_MODE is True | provider={Config.LLM_PROVIDER} | has_key={bool(Config.LLM_API_KEY)}]\n\n" + demo_chat_response(user_query, intent, context),
+            "response": demo_chat_response(user_query, intent, context),
             "mode": "demo",
         }
 
@@ -89,9 +89,10 @@ def generate_business_response(user_query: str, intent: str, context: str) -> di
         text = _call_openai_compatible_api(prompt)
         return {"response": text, "mode": "live"}
     except LLMError as exc:
+        print(f"[LLM Error] {exc}")
         # Fail gracefully -> demo fallback, app never crashes
         return {
-            "response": f"[API Error: {exc} | url={Config.LLM_API_BASE} | model={Config.LLM_MODEL} | key={Config.LLM_API_KEY[:6] if Config.LLM_API_KEY else 'none'}...]\n\n" + demo_chat_response(user_query, intent, context),
+            "response": demo_chat_response(user_query, intent, context),
             "mode": "demo-fallback",
         }
 
