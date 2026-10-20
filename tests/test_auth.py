@@ -56,3 +56,34 @@ def test_logout_clears_session(registered_user):
     # after logout, dashboard should redirect back to login
     dash_response = registered_user.get("/dashboard", follow_redirects=True)
     assert b"Login" in dash_response.data or b"log in" in dash_response.data.lower()
+
+
+def test_forgot_password_resets_password(client):
+    client.post("/register", data={
+        "name": "Eve", "email": "eve@example.com",
+        "password": "initialpass", "confirm_password": "initialpass",
+    })
+    # Reset password
+    response = client.post("/forgot-password", data={
+        "email": "eve@example.com",
+        "new_password": "newsecurepass",
+        "confirm_password": "newsecurepass",
+    }, follow_redirects=True)
+    assert response.status_code == 200
+    assert b"Password reset successfully" in response.data
+
+    # Log in with new password
+    login_response = client.post("/login", data={
+        "email": "eve@example.com", "password": "newsecurepass",
+    }, follow_redirects=True)
+    assert login_response.status_code == 200
+    assert b"Welcome back" in login_response.data or b"Dashboard" in login_response.data
+
+
+def test_forgot_password_invalid_user(client):
+    response = client.post("/forgot-password", data={
+        "email": "nonexistent@example.com",
+        "new_password": "newsecurepass",
+        "confirm_password": "newsecurepass",
+    }, follow_redirects=True)
+    assert b"No account found" in response.data

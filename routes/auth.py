@@ -110,3 +110,40 @@ def logout():
     session.clear()
     flash("You have been logged out.", "info")
     return redirect(url_for("auth.login"))
+
+
+@auth_bp.route("/forgot-password", methods=["GET", "POST"])
+def forgot_password():
+    if request.method == "POST":
+        email = request.form.get("email", "").strip().lower()
+        new_password = request.form.get("new_password", "")
+        confirm_password = request.form.get("confirm_password", "")
+
+        if not email or not new_password or not confirm_password:
+            flash("All fields are required.", "danger")
+            return render_template("forgot_password.html")
+
+        if len(new_password) < 6:
+            flash("Password must be at least 6 characters long.", "danger")
+            return render_template("forgot_password.html")
+
+        if new_password != confirm_password:
+            flash("Passwords do not match.", "danger")
+            return render_template("forgot_password.html")
+
+        user = User.query.filter_by(email=email).first()
+        if not user:
+            flash("No account found with this email address.", "danger")
+            return render_template("forgot_password.html")
+
+        try:
+            user.set_password(new_password)
+            db.session.commit()
+            flash("Password reset successfully! Please log in with your new password.", "success")
+            return redirect(url_for("auth.login"))
+        except Exception:
+            db.session.rollback()
+            flash("An error occurred while resetting your password. Please try again.", "danger")
+            return render_template("forgot_password.html")
+
+    return render_template("forgot_password.html")
