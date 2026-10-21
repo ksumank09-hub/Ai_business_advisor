@@ -37,13 +37,14 @@ def _get_profile_context(user_id: int) -> str:
     )
     if not profile:
         return ""
+    loc_str = f" located in '{profile.location}'," if profile.location else ""
     return (
         f"The user has a saved business profile: '{profile.business_name}' "
-        f"({profile.business_type}), startup cost {profile.startup_cost}, "
+        f"({profile.business_type}){loc_str} startup cost {profile.startup_cost}, "
         f"monthly revenue {profile.monthly_revenue}, monthly cost {profile.monthly_cost}, "
         f"net profit {profile.net_profit}, ML-predicted risk: {profile.predicted_risk}, "
         f"Business Health Score: {profile.overall_health_score}/100. "
-        f"If relevant to the question, reference these actual numbers instead of generic figures."
+        f"If relevant to the question, reference these actual numbers and location context instead of generic figures."
     )
 
 chatbot_bp = Blueprint("chatbot", __name__)

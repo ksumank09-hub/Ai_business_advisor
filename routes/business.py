@@ -6,6 +6,8 @@ Both use the LLM when available, and fall back to structured Demo Mode
 templates when no LLM API key is configured (or if the live call fails).
 """
 
+import json
+import re
 from flask import Blueprint, render_template, request, session, flash
 
 from database.database import db
@@ -155,7 +157,41 @@ def market_analysis():
                 flash("Invalid budget.", "danger")
                 return render_template("market_analysis.html", form_data=form_data, result=None)
 
-        # Demo Mode / fallback template (kept simple + structured; labeled as AI/demo insight)
-        analysis_result = demo_market_analysis_template(form_data)
+        # Use live Groq LLM to generate location-specific market analysis
+        if not Config.DEMO_MODE:
+            try:
+                prompt = (
+                    f"Perform a realistic, detailed market analysis for a {business_type} business in {location}.\n"
+                    f"Product/Service: {product or 'General'}\n"
+                    f"Target Customers: {target_customers or 'General consumers'}\n"
+                    f"Budget: {budget or 'Not specified'}\n\n"
+                    f"Focus specifically on the real local dynamics, demographics, and competitive landscape of '{location}'. "
+                    "Do NOT give generic or random advice; provide analysis tailored specifically to this area.\n\n"
+                    "Return a JSON object ONLY with these exact keys:\n"
+                    "{\n"
+                    f'  "target_market": "detailed description of the market in {location}",\n'
+                    f'  "customer_profile": "demographics, spending power, and buyer behavior in {location}",\n'
+                    '  "competition_level": "Low/Medium/High with explanation of existing local competitors",\n'
+                    '  "opportunities": ["opportunity 1 specific to area", "opportunity 2", "opportunity 3"],\n'
+                    '  "threats": ["local threat or challenge 1", "threat 2", "threat 3"],\n'
+                    f'  "recommended_strategy": "actionable marketing and operational strategy for success in {location}"\n'
+                    "}"
+                )
+                llm_res = generate_raw_completion(prompt)
+                if llm_res.get("response"):
+                    text = llm_res["response"].strip()
+                    if "```" in text:
+                        match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', text, re.DOTALL)
+                        if match:
+                            text = match.group(1)
+                    parsed = json.loads(text)
+                    parsed["note"] = f"AI Market Analysis specifically tailored for {location}."
+                    analysis_result = parsed
+            except Exception as e:
+                print(f"Market analysis live AI error: {e}")
+
+        # Fallback to structured template if LLM call failed or demo mode
+        if not analysis_result:
+            analysis_result = demo_market_analysis_template(form_data)
 
     return render_template("market_analysis.html", form_data=form_data, result=analysis_result)
