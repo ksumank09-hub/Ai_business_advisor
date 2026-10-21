@@ -58,7 +58,7 @@
         </div>
         <div class="list-group list-group-flush mt-2">
           {% for b in recent_businesses %}
-          <a href="{{ url_for('analyzer.view_profile', profile_id=b.id) }}" class="list-group-item list-group-item-action px-0 d-flex justify-content-between align-items-center">
+          <a href="{{ url_for('analyzer.view_business_profile', profile_id=b.id) }}" class="list-group-item list-group-item-action px-0 d-flex justify-content-between align-items-center">
             <div>
               <div class="fw-bold">{{ b.business_name }} <span class="badge bg-secondary ms-1">{{ b.business_type }}</span></div>
               <small class="text-muted">Health: {{ b.overall_health_score }}/100 • Margin: {{ b.profit_margin_pct }}%</small>

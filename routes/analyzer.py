@@ -164,7 +164,8 @@ def business_analyzer():
     )
 
 
-@analyzer_bp.route("/business-analyzer/<int:profile_id>")
+@analyzer_bp.route("/business-analyzer/<int:profile_id>", endpoint="view_profile")
+@analyzer_bp.route("/business-analyzer/<int:profile_id>", endpoint="view_business_profile")
 @login_required
 def view_business_profile(profile_id):
     profile = BusinessProfile.query.filter_by(id=profile_id, user_id=session["user_id"]).first()
