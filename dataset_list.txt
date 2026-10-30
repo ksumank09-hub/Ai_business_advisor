@@ -1,0 +1,119 @@
+================================================================================
+AI-POWERED BUSINESS ENTREPRENEUR ASSISTANT
+COMPLETE LIST OF DATASETS & DATA SOURCES USED IN THIS PROJECT
+================================================================================
+
+1. PRIMARY MACHINE LEARNING DATASET (CLASSIFICATION)
+--------------------------------------------------------------------------------
+File Name        : business_dataset.csv
+File Path        : ai_business_assistant/data/business_dataset.csv
+File Format      : Comma-Separated Values (CSV), UTF-8
+Size             : 600 rows x 8 columns
+Missing Values   : 0 (100% complete)
+Task / Module    : Business Risk Prediction (Supervised Learning)
+Algorithm Used   : Random Forest Classifier (200 trees, max_depth=8)
+Scripts          : ml/train_model.py, ml/predict.py, ml/preprocessing.py
+
+Features (7):
+  1. business_type   : Categorical (E-commerce, Retail, Technology,
+                       Fashion & Clothing, Food & Beverage, Services,
+                       Manufacturing, Education)
+  2. investment      : Numerical (₹25,000 to ₹20,00,000)
+  3. market_demand   : Categorical (Low, Medium, High)
+  4. competition     : Categorical (Low, Medium, High)
+  5. experience      : Categorical (Low, Medium, High)
+  6. operating_cost  : Numerical (₹1,257.83 to ₹4,96,043.54 / month)
+  7. target_market   : Categorical (Small, Medium, Large)
+
+Target Variable (1):
+  - risk_level       : Multi-class (Low Risk: 74, Medium Risk: 275, High Risk: 251)
+
+Model Evaluation : ~70.83% Accuracy, 0.707 Precision, 0.708 Recall, 0.703 F1-score
+Dataset Nature   : Synthetic academically generated dataset for demonstration
+
+
+2. CUSTOMER SEGMENTATION DATASET (CLUSTERING)
+--------------------------------------------------------------------------------
+File Name        : customer_dataset.csv
+File Path        : ai_business_assistant/data/customer_dataset.csv
+File Format      : Comma-Separated Values (CSV), UTF-8
+Size             : 300 rows x 4 columns
+Missing Values   : 0 (100% complete)
+Task / Module    : Customer Segmentation (Unsupervised Learning)
+Algorithm Used   : K-Means Clustering (K=4) with StandardScaler
+Scripts          : ml/segmentation.py
+
+Features (4):
+  1. age                 : Numerical (18 to 59 years, Mean: 34.22)
+  2. income              : Numerical (₹15,347.86 to ₹2,46,907.80, Mean: ₹69,867.22)
+  3. purchase_frequency  : Numerical (1 to 14 purchases/month, Mean: 5.21)
+  4. spending_amount     : Numerical (₹501.04 to ₹38,887.65, Mean: ₹8,138.97)
+
+Identified Customer Segments (K=4):
+  - Budget Customers     : 110 customers (36.7%), Mean Spend: ₹1,608.64
+  - Regular Customers    : 97 customers  (32.3%), Mean Spend: ₹4,713.59
+  - Premium Customers    : 48 customers  (16.0%), Mean Spend: ₹11,028.34
+  - High-Value Customers : 45 customers  (15.0%), Mean Spend: ₹28,403.59
+Dataset Nature   : Synthetic customer transaction and demographic dataset
+
+
+3. RAG KNOWLEDGE BASE TEXT CORPUS (RETRIEVAL-AUGMENTED GENERATION)
+--------------------------------------------------------------------------------
+Directory Path   : ai_business_assistant/knowledge_base/
+File Format      : Plain Text (.txt), paragraph-level chunks
+Total Chunks     : 32 paragraph chunks
+Total Volume     : ~9,400 characters, ~1,292 words
+Retrieval Engine : scikit-learn TF-IDF Vectorizer + Cosine Similarity
+Scripts          : ai/rag.py, ai/llm.py, routes/chatbot.py
+
+Files in Knowledge Base (5):
+  1. business_ideas.txt
+     - Chunks: 7 | Words: 277 | Characters: 2,045
+     - Content: Low-capital ideas, service startups, e-commerce, food & beverage
+  2. finance.txt
+     - Chunks: 6 | Words: 267 | Characters: 1,913
+     - Content: Working capital, break-even analysis, bootstrapping vs funding
+  3. marketing.txt
+     - Chunks: 7 | Words: 263 | Characters: 1,939
+     - Content: Customer acquisition cost (CAC), SEO, social media marketing
+  4. risk_management.txt
+     - Chunks: 6 | Words: 234 | Characters: 1,640
+     - Content: Mitigation strategies, financial buffers, diversification
+  5. startup_strategy.txt
+     - Chunks: 6 | Words: 251 | Characters: 1,863
+     - Content: Lean startup methodology, MVP design, product-market fit
+
+
+4. APPLICATION DATABASE (RELATIONAL STORAGE)
+--------------------------------------------------------------------------------
+Database Engine  : SQLite
+Database Path    : ai_business_assistant/instance/app.db
+ORM Framework    : Flask-SQLAlchemy
+Scripts          : database/models.py, database/__init__.py
+
+Database Tables (6):
+  1. users             : User accounts, email, hashed passwords, timestamps
+  2. conversations     : User chat sessions and conversation metadata
+  3. messages          : Chat interaction log, detected intent, retrieved RAG sources
+  4. predictions       : Risk prediction inputs, predicted risk class, probabilities
+  5. business_profiles : Saved business evaluations, revenue, ROI, health score
+  6. business_plans    : Generated 10-section business plans
+
+
+5. TRAINED MACHINE LEARNING ARTIFACTS
+--------------------------------------------------------------------------------
+Directory Path   : ai_business_assistant/ml/
+Format           : Python Pickle (.pkl)
+
+Files (3):
+  1. model.pkl               : Trained RandomForestClassifier for risk prediction
+  2. encoders.pkl            : LabelEncoder instances for categorical columns
+  3. segmentation_model.pkl  : Trained KMeans model and StandardScaler
+
+================================================================================
+SUMMARY:
+  - Tabular Datasets : 2 CSV files (business_dataset.csv, customer_dataset.csv)
+  - Text Knowledge   : 5 TXT files (32 chunks in knowledge_base/)
+  - Database Storage : 1 SQLite file (app.db with 6 entity tables)
+  - Model Artifacts  : 3 PKL files (trained models and encoders)
+================================================================================
